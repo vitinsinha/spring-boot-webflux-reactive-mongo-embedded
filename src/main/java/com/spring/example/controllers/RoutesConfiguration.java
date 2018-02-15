@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
@@ -27,18 +29,40 @@ public class RoutesConfiguration {
     RouterFunction<?> routes(PersonRepository personRepository) {
         return route(GET("/person/{id}"), request -> ok().body(personRepository.findById(request.pathVariable("id")), Person.class))
                 .andRoute(POST("/person"),
-                        request -> {
-                            return personRepository.insert(request.bodyToMono(Person.class))
-                                    .next()
-                                    .flatMap(s -> ok().contentType(MediaType.APPLICATION_JSON).body(Mono.just("Post Successful"), String.class))
-                                    .onErrorResume(Exception.class, e -> {
-                                        log.error("Exception: ", e);
-                                        return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        request -> personRepository.insert(request.bodyToMono(Person.class))
+                                .next()
+                                .flatMap(s -> ok().contentType(MediaType.APPLICATION_JSON).body(Mono.just("Post Successful"), String.class))
+                                .onErrorResume(Exception.class, e -> {
+                                    log.error("Exception: ", e);
+                                    return ServerResponse.status(HttpStatus.CONFLICT)
                                             .contentType(MediaType.APPLICATION_JSON)
-                                            .body(Mono.just("Exception occurred while inserting data:\n" + e.getMessage()), String.class); });
+                                            .body(Mono.just("Exception occurred while inserting data: " + e.getMessage()), String.class);
+                                }))
 
-                        })
                 //Just for testing another route
-                .andRoute(GET("/test"), request -> ok().contentType(MediaType.APPLICATION_JSON).body(Mono.just("test"), String.class));
+                .andRoute(GET("/test"), request -> ok().contentType(MediaType.APPLICATION_JSON).body(Mono.just("test"), String.class))
+
+                .andRoute(GET("/demoPost"), request -> {
+                    Person person = new Person();
+                    person.setAge(32);
+                    person.setId("1");
+                    person.setName("Test");
+                    WebClient.RequestHeadersSpec<?> request1 = WebClient
+                            .create()
+                            .post()
+                            .uri("http://localhost:8080/person")
+                            .body(BodyInserters.fromObject(person))
+                            .header("Content-Type", "application/json")
+                            .header("Authorization", "Basic dXNlcjpwYXNzd29yZA==");
+                    return request1.exchange()
+                            .flatMap(s -> ok().contentType(MediaType.APPLICATION_JSON).body(s.bodyToMono(String.class), String.class))
+                            .onErrorResume(Exception.class, e -> {
+                                log.error("Exception: ", e);
+                                return ServerResponse.status(HttpStatus.CONFLICT)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .body(Mono.just("Exception occurred: " + e.getMessage()), String.class);
+                            });
+
+                });
     }
 }

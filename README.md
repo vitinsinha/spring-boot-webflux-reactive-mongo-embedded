@@ -5,6 +5,7 @@ This is a sample application that shows how to build a web application using
  - Spring Webflux
     - Annotation based programming model
     - Functional, Java 8 lambda style, programming model
+    - WebClient
     - Error handling
  - Spring Reactive Data MongoDb (Embedded)
  - Spring Security Reactive Webflux
@@ -19,7 +20,7 @@ Please see the following pages for more details
 
 ## Running the application
 
-Run using the gradle wrapper included
+Run using the included gradle wrapper
 
 ```
 ./gradlew bootRun
@@ -48,4 +49,11 @@ POST __/person__
 
 ``` curl -X POST -d '{"name":"John Doe","age":20,"id":1}' -H "Content-Type: application/json" http://localhost:8080/person -v -u user:password```
 
-Note: If you post the same id again, you will see an error response.
+*If you post the same id again, you will see an error response.*
+
+GET __/demoPost__
+
+``` curl http://localhost:8080/demoPost -v -u user:password```
+
+*This is just to show how to use WebClient.*
+
