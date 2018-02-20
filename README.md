@@ -1,6 +1,6 @@
 # Spring Boot Webflux Reactive Mongo Embedded
 
-This is a sample application that shows how to build a web application using
+This is a sample application that shows how to build a backend application using
  - Spring Boot 2
  - Spring Webflux
     - Annotation based programming model
